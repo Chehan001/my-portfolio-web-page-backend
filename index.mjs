@@ -7,7 +7,10 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors()); // restrict later to your frontend domain
+app.use(cors({
+  origin: "https://lemon-rock-01cb00200.2.azurestaticapps.net",
+  methods: ["GET", "POST"],
+})); //frontend domain
 app.use(express.json());
 
 app.get("/health", (req, res) => res.json({ ok: true }));
