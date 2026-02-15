@@ -7,10 +7,27 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors({
-  origin: "https://lemon-rock-01cb00200.2.azurestaticapps.net",
-  methods: ["GET", "POST"],
-})); //frontend domain
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.length === 0) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+
+      return callback(new Error("Not allowed by CORS"));
+    },
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
+
 app.use(express.json());
 
 app.get("/health", (req, res) => res.json({ ok: true }));
@@ -19,12 +36,17 @@ app.post("/send-message", async (req, res) => {
   const { name, email, phone, subject, message } = req.body;
 
   if (!name || !email || !subject || !message) {
-    return res.status(400).json({ success: false, message: "Missing required fields" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
   }
 
   try {
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      return res.status(500).json({ success: false, message: "Server email config missing" });
+      return res.status(500).json({
+        success: false,
+        message: "Server email config missing (EMAIL_USER/EMAIL_PASS)",
+      });
     }
 
     const transporter = nodemailer.createTransport({
